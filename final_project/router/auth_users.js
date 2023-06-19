@@ -17,6 +17,7 @@ const isValid = (username)=>{
 }
 
 
+
 const authenticatedUser = (username,password)=>{ //returns boolean
   //write code to check if username and password match the one we have in records. 'users[]'
       let validusers = users.filter((user)=>{
@@ -29,6 +30,8 @@ const authenticatedUser = (username,password)=>{ //returns boolean
           return false;
       }        
   }
+
+
 
 //only registered users can login
 regd_users.post("/login", (req,res) => {
@@ -43,65 +46,77 @@ regd_users.post("/login", (req,res) => {
     let accessToken = jwt.sign({
       data: password
     }, 'access', { expiresIn: 60  });
-    
+    //console.log(accessToken);
     req.session.authorization = {
       accessToken, username
   }
- 
   return res.status(200).send("User successfully logged in");
   } else {
     return res.status(208).json({message: "Invalid Login. Check username and password"});
   }
 });
-//  return res.status(300).json({message: "Yet to be implemented"});
-//});
 
-const reviewerlist = [];
+
+
 // Add a book review
 regd_users.put("/auth/review/:isbn", (req, res) => {
-  
-// isbn
-  const isbn = parseInt(req.params.isbn) - 1;
-  console.log(isbn);
-// new review
-  let myReview = {};
-  myReview = req.query.review;
-  console.log(myReview);
+  const myIsbn = parseInt(req.params.isbn);
+  const myReview = req.query.review;
+  const myUsername = req.session.authorization.username;
 
-// book array with details
-  let bookDetails4 = Object.values(books)
-  console.log(bookDetails4);
-
-//  username retrieved  from session
-  nombreusuario = req.session.authorization.username;
-  console.log(nombreusuario);
-
-  bookDetails4[isbn].reviews = myReview;
-  console.log(bookDetails4);
-  isbnreal = isbn + 1; 
-
-  const reviewer = reviewerlist.find((reviewer) => reviewer.username === nombreusuario);
-  
-  if (!reviewer) {
-    reviewerlist.push({isbnreal, myReview, nombreusuario});
+  if (!books[myIsbn].reviews) {
+    books[myIsbn].reviews = {};
   }
 
-  console.log(reviewerlist);
+  // Retain the existing reviews while adding a new one
+  books[myIsbn].reviews = {
+    ...books[myIsbn].reviews,
+    [myUsername]: myReview
+  };
+
+  req.session.books = books;
 
   let accessToken = jwt.sign({
-    data: isbnreal
-  }, 'access', { expiresIn: 60*3  });
-  
-  //console.log(accessToken);
+    data: myUsername
+  }, 'access', { expiresIn: 60*5 });
 
-  
-  req.session.authorization = {
-    accessToken, nombreusuario
-}
+  req.session.authorization.accessToken = accessToken;
 
-
-  return res.status(300).json({message: "Yet to be implemented"});
+  return res.status(300).send(books);
 });
+
+
+// Delete a book review by using isbn and username on the end point
+//   regd_users.delete("/auth/review/:isbn/:username", (req, res) => {
+//     const myIsbn = parseInt(req.params.isbn);
+//     const myUsername = req.params.username;
+  
+//     if (books[myIsbn].reviews && books[myIsbn].reviews.hasOwnProperty(myUsername)) {
+//       delete books[myIsbn].reviews[myUsername];
+//       req.session.books = books;
+//       return res.status(200).send("Review deleted successfully.");
+//     } else {
+//       return res.status(404).send("Review not found.");
+//     }
+//   });
+// }
+
+
+// Delete a book review by using isbn from parameter and filtering by username
+  regd_users.delete("/auth/review/:isbn", (req, res) => {
+    const myIsbn = parseInt(req.params.isbn);
+    const myUsername = req.session.authorization.username;
+  
+    if (books[myIsbn].reviews && books[myIsbn].reviews.hasOwnProperty(myUsername)) {
+      delete books[myIsbn].reviews[myUsername];
+      req.session.books = books;
+      return res.status(200).send(books);
+    } else {
+      return res.status(404).send("Review not found or you don't have permission to delete this review.");
+    }
+  });
+//}
+
 
 module.exports.authenticated = regd_users;
 module.exports.isValid = isValid;

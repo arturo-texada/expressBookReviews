@@ -11,6 +11,8 @@ let books = {
       10: {"author": "Samuel Beckett","title": "Molloy, Malone Dies, The Unnamable, the trilogy", "reviews": {} }
 }
 
+// let miRevisionLibro = {};
+// let miNombreUsuario = {};
 
-
-module.exports=books;
+module.exports = books;
+// /Users/backend/Documents/nodejs/edx/FullStackAppDev/BackEndCourse/express-book-reviews-app/expressBookReviews/final_project/router/booksdb.js
